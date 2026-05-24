@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Worknoon Chat - Frontend
 
-## Getting Started
+A modern real-time chat UI built with Next.js, Tailwind CSS, and Socket.IO client.
 
-First, run the development server:
+---
+
+## Tech Stack
+
+- Next.js
+- Tailwind CSS
+- Socket.IO Client
+- Axios
+- Zustand (state management)
+- React Hot Toast
+
+---
+
+## Features
+
+- User authentication (login/register)
+- Real-time messaging
+- Conversation inbox system
+- Typing indicators
+- Online users indicator
+- Responsive UI (mobile + desktop)
+- Role-based chat support UI
+- Floating chat widget (WordPress integration)
+
+---
+
+## Project Structure
+
+````
+
+src/
+├── app/
+├── components/
+├── lib/
+├── store/
+├── services/
+
+````
+
+---
+
+## Setup Instructions
+
+### 1. Install dependencies
+
+```bash
+npm install
+````
+
+### 2. Run development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Environment
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+Backend must run on:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+http://localhost:5000
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## API Integration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+All API calls use Axios instance with JWT token:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+* `/api/auth`
+* `/api/conversations`
+* `/api/messages`
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Socket Events
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* `setup`
+* `joinConversation`
+* `sendMessage`
+* `typing`
+* `stopTyping`
+* `onlineUsers`
+* `newMessage`
+
+---
+
+## UI Features
+
+* Responsive chat layout
+* Sidebar + chat window design
+* Mobile adaptive navigation
+* Auto-scroll to latest messages
+* Empty and loading states
+
+---
+
+## Key Highlights
+
+* Real-time architecture using Socket.IO
+* Clean separation of API and UI logic
+* Scalable chat UI design inspired by modern SaaS tools
+* WordPress embed support via iframe widget
+
+---
+
+## Demo
+
+
+---
+
+## Notes
+
+Frontend can be:
+
+* used standalone
+* embedded inside WordPress plugin
+* extended into full SaaS dashboard

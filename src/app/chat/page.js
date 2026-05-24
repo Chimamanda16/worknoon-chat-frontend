@@ -12,6 +12,7 @@ export default function ChatPage() {
   const [selectedChat, setSelectedChat] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [mobileView, setMobileView] = useState("list"); 
 
   const [newMessage, setNewMessage] = useState("");
 
@@ -112,9 +113,9 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-100">
       {/* SIDEBAR */}
-      <div className="w-1/3 bg-white border-r overflow-y-auto">
+      <div className={`w-full md:w-1/3 h-screen bg-white border-r overflow-y-auto h-1/3 md:h-full ${mobileView === "chat" ? "hidden md:block" : ""}`}>
         <div className="p-4 border-b flex items-center justify-between">
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl md:text-2xl font-bold">
             Messages
           </h1>
 
@@ -127,7 +128,6 @@ export default function ChatPage() {
         </div>
 
         {conversations.map((conversation) => {
-            console.log(conversations)
             const otherUser = conversation.participants.find(
               (p) => p._id !== userInfo._id
             );
@@ -143,6 +143,7 @@ export default function ChatPage() {
               onClick={() => {
                 setSelectedChat(conversation);
                 fetchMessages(conversation._id);
+                setMobileView("chat");
               }}
               className="p-4 border-b cursor-pointer hover:bg-gray-50"
             >
@@ -172,18 +173,27 @@ export default function ChatPage() {
       </div>
 
       {/* CHAT AREA */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col h-2/3 md:h-full ${mobileView === "list" ? "hidden md:flex" : "flex"}`}>
         {selectedChat ? (
           <>
             {/* HEADER */}
             <div className="p-4 border-b bg-white">
+                <div className="flex gap-4">
+
+                    <button
+                        className="md:hidden text-sm cursor-pointer"
+                        onClick={() => setMobileView("list")}
+                        >
+                        ← Back
+                    </button>
               <h2 className="font-bold text-lg">
                 {
-                  selectedChat.participants.find(
-                    (p) => p._id !== userInfo._id
-                  )?.name
+                    selectedChat.participants.find(
+                        (p) => p._id !== userInfo._id
+                    )?.name
                 }
               </h2>
+                </div>
 
               {typing && (
                 <p className="text-sm text-gray-500">
@@ -193,7 +203,7 @@ export default function ChatPage() {
             </div>
 
             {/* MESSAGES */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-3 md:p-4 pb-20 md:pb-4 space-y-3">
               {messages.map((message) => (
                 <div
                   key={message._id}
@@ -209,7 +219,7 @@ export default function ChatPage() {
             </div>
 
             {/* INPUT */}
-            <div className="p-4 bg-white border-t flex gap-2">
+            <div className="p-3 md:p-4 bg-white border-t flex gap-2 sticky bottom-0">
               <input
                 type="text"
                 placeholder="Type a message..."
@@ -229,12 +239,12 @@ export default function ChatPage() {
                     );
                   }, 1000);
                 }}
-                className="flex-1 border rounded-full px-4 py-3"
+                className="flex-1 border rounded-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base"
               />
 
               <button
                 onClick={handleSendMessage}
-                className="bg-black text-white px-6 rounded-full"
+                className="bg-black text-white px-4 md:px-6 py-2 rounded-full text-sm md:text-base"
               >
                 Send
               </button>

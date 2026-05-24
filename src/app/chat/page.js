@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import API from "@/lib/api";
 import { io } from "socket.io-client";
+import UserListModal from "./userListModal";
 
 const socket = io("http://localhost:5000");
 
 export default function ChatPage() {
   const [conversations, setConversations] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
-
+  const [openModal, setOpenModal] = useState(false);
   const [messages, setMessages] = useState([]);
 
   const [newMessage, setNewMessage] = useState("");
@@ -109,19 +110,32 @@ export default function ChatPage() {
   }, []);
 
   return (
-    <div className="h-screen flex bg-gray-100">
+    <div className="h-screen flex flex-col md:flex-row bg-gray-100">
       {/* SIDEBAR */}
       <div className="w-1/3 bg-white border-r overflow-y-auto">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex items-center justify-between">
           <h1 className="text-2xl font-bold">
             Messages
           </h1>
+
+          <button
+            onClick={() => setOpenModal(true)}
+           className="bg-black cursor-pointer text-white px-4 py-2 rounded-full"
+          >
+            +
+          </button>
         </div>
 
         {conversations.map((conversation) => {
-          const otherUser = conversation.participants.find(
-            (p) => p._id !== userInfo._id
-          );
+            console.log(conversations)
+            const otherUser = conversation.participants.find(
+              (p) => p._id !== userInfo._id
+            );
+            const unreadCount =
+              conversation.lastMessage &&
+              !conversation.lastMessage.readBy?.includes(userInfo._id)
+                ? 1
+                : 0;
 
           return (
             <div
@@ -141,6 +155,11 @@ export default function ChatPage() {
                   <p className="text-sm text-gray-500">
                     {otherUser?.role}
                   </p>
+                  {unreadCount > 0 && (
+                    <span className="bg-black text-white text-xs px-2 py-1 rounded-full">
+                        New
+                    </span>
+                    )}
                 </div>
 
                 {onlineUsers.includes(otherUser?._id) && (
@@ -178,7 +197,7 @@ export default function ChatPage() {
               {messages.map((message) => (
                 <div
                   key={message._id}
-                  className={`max-w-xs p-3 rounded-2xl ${
+                  className={`max-w-sm px-4 py-3 rounded-3xl shadow-sm ${
                     message.sender._id === userInfo._id
                       ? "bg-black text-white ml-auto"
                       : "bg-white"
@@ -224,11 +243,21 @@ export default function ChatPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-gray-500">
-              Select a conversation
+              Start a conversation with a customer, merchant, designer or support agent.
             </p>
           </div>
         )}
       </div>
+      <UserListModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        onChatCreated={(conversation) => {
+            setConversations((prev) => [
+            conversation,
+            ...prev,
+            ]);
+        }}
+        />
     </div>
   );
 }

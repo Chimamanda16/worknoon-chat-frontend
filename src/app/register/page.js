@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import API from "@/lib/api";
 import toast from "react-hot-toast";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -95,6 +96,7 @@ export default function RegisterPage() {
         <button className="w-full cursor-pointer bg-black text-white p-3 rounded-lg">
           Register
         </button>
+        <p>Already have an account? <Link className="text-blue-600" href="/login">Login</Link></p>
       </form>
     </div>
   );

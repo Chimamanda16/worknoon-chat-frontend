@@ -134,22 +134,31 @@ export default function ChatPage() {
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-100">
       {/* SIDEBAR */}
-      <div className={`w-full md:w-1/3 h-screen bg-white border-r overflow-y-auto h-1/3 md:h-full ${mobileView === "chat" ? "hidden md:block" : ""}`}>
+      <div className={`w-full md:w-1/3 h-screen bg-white border-r overflow-y-auto md:h-full ${mobileView === "chat" ? "hidden md:block" : ""}`}>
         <div className="p-4 border-b flex items-center justify-between">
-            <h1 className="text-xl md:text-2xl font-bold">
-                Messages
-            </h1>
+  <h1 className="text-xl md:text-2xl font-bold">
+    Messages
+  </h1>
 
-            <button
-                onClick={() => {
-                localStorage.removeItem("userInfo");
-                window.location.href = "/login";
-                }}
-                className="text-sm cursor-pointer bg-red-500 text-white px-3 py-1 rounded-full"
-            >
-                Logout
-            </button>
-        </div>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => setOpenModal(true)}
+      className="bg-black text-white px-3 py-2 rounded-full text-sm cursor-pointer"
+    >
+      +
+    </button>
+
+    <button
+      onClick={() => {
+        localStorage.removeItem("userInfo");
+        window.location.href = "/login";
+      }}
+      className="text-sm cursor-pointer bg-red-500 text-white px-3 py-2 rounded-full"
+    >
+      Logout
+    </button>
+  </div>
+</div>
         {!loading && conversations.length === 0 && (
             <p className="p-4 text-gray-500">
                 No conversations yet. Start one using the + button.
@@ -253,6 +262,7 @@ export default function ChatPage() {
                   {message.content}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* INPUT */}
@@ -285,7 +295,6 @@ export default function ChatPage() {
               >
                 Send
               </button>
-              <div ref={messagesEndRef} />
             </div>
           </>
         ) : (

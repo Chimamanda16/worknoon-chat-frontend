@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import API from "@/lib/api";
 import { io } from "socket.io-client";
 import UserListModal from "./userListModal";
 import { useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth";
-import { useRef } from "react";
 
 
 
@@ -27,6 +26,17 @@ export default function ChatPage() {
 
   const router = useRouter();
   const messagesEndRef = useRef(null);
+  const selectedChatRef = useRef(null);
+
+  const addMessage = useCallback((message) => {
+    setMessages((prev) => {
+      if (prev.some((item) => item._id === message._id)) {
+        return prev;
+      }
+
+      return [...prev, message];
+    });
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,14 +48,16 @@ export default function ChatPage() {
     if (!user) {
         router.push("/login");
     }
-  }, []);
+  }, [router]);
 
   const userInfo = getUser();
 
   // FETCH CONVERSATIONS
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async (showLoading = true) => {
         try {
-            setLoading(true);
+            if (showLoading) {
+              setLoading(true);
+            }
 
             const { data } = await API.get("/conversations");
             setConversations(data);
@@ -55,7 +67,7 @@ export default function ChatPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
   // FETCH MESSAGES
   const fetchMessages = async (conversationId) => {
@@ -65,8 +77,6 @@ export default function ChatPage() {
       );
 
       setMessages(data);
-
-      socket.emit("joinConversation", conversationId);
     } catch (error) {
       console.log(error);
     }
@@ -84,7 +94,8 @@ export default function ChatPage() {
 
       socket.emit("sendMessage", data);
 
-      setMessages((prev) => [...prev, data]);
+      addMessage(data);
+      fetchConversations(false);
 
       setNewMessage("");
     } catch (error) {
@@ -99,12 +110,28 @@ export default function ChatPage() {
     }
 
     socket.on("newMessage", (message) => {
+
+      // Update open chat messages
       if (
-        selectedChat &&
-        message.conversation._id === selectedChat._id
+        selectedChatRef.current &&
+        message.conversation._id === selectedChatRef.current._id
       ) {
-        setMessages((prev) => [...prev, message]);
+        addMessage(message);
       }
+
+      // Refresh conversations list in realtime
+      fetchConversations(false);
+    });
+
+    socket.on("conversationUpdated", ({ message }) => {
+      if (
+        selectedChatRef.current &&
+        message.conversation._id === selectedChatRef.current._id
+      ) {
+        addMessage(message);
+      }
+
+      fetchConversations(false);
     });
 
     socket.on("typing", () => {
@@ -121,35 +148,87 @@ export default function ChatPage() {
 
     return () => {
       socket.off("newMessage");
+      socket.off("conversationUpdated");
       socket.off("typing");
       socket.off("stopTyping");
       socket.off("onlineUsers");
     };
+  }, [addMessage, fetchConversations, userInfo?._id]);
+
+  useEffect(() => {
+    const previousChatId = selectedChatRef.current?._id;
+
+    if (previousChatId && previousChatId !== selectedChat?._id) {
+      socket.emit("leaveConversation", previousChatId);
+    }
+
+    selectedChatRef.current = selectedChat;
+
+    if (selectedChat?._id) {
+      socket.emit("joinConversation", selectedChat._id);
+    }
+
+    return () => {
+      if (selectedChat?._id) {
+        socket.emit("leaveConversation", selectedChat._id);
+      }
+    };
   }, [selectedChat]);
 
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    let isMounted = true;
+
+    const loadConversations = async () => {
+      try {
+        const { data } = await API.get("/conversations");
+
+        if (isMounted) {
+          setConversations(data);
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadConversations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   return (
     <div className="h-screen flex flex-col md:flex-row bg-gray-100">
       {/* SIDEBAR */}
-      <div className={`w-full md:w-1/3 h-screen bg-white border-r overflow-y-auto h-1/3 md:h-full ${mobileView === "chat" ? "hidden md:block" : ""}`}>
+      <div className={`w-full md:w-1/3 h-screen bg-white border-r overflow-y-auto md:h-full ${mobileView === "chat" ? "hidden md:block" : ""}`}>
         <div className="p-4 border-b flex items-center justify-between">
-            <h1 className="text-xl md:text-2xl font-bold">
-                Messages
-            </h1>
+  <h1 className="text-xl md:text-2xl font-bold">
+    Messages
+  </h1>
 
-            <button
-                onClick={() => {
-                localStorage.removeItem("userInfo");
-                window.location.href = "/login";
-                }}
-                className="text-sm cursor-pointer bg-red-500 text-white px-3 py-1 rounded-full"
-            >
-                Logout
-            </button>
-        </div>
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => setOpenModal(true)}
+      className="bg-black text-white px-3 py-2 rounded-full text-sm cursor-pointer"
+    >
+      +
+    </button>
+
+    <button
+      onClick={() => {
+        localStorage.removeItem("userInfo");
+        window.location.href = "/login";
+      }}
+      className="text-sm cursor-pointer bg-red-500 text-white px-3 py-2 rounded-full"
+    >
+      Logout
+    </button>
+  </div>
+</div>
         {!loading && conversations.length === 0 && (
             <p className="p-4 text-gray-500">
                 No conversations yet. Start one using the + button.
@@ -253,6 +332,7 @@ export default function ChatPage() {
                   {message.content}
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* INPUT */}
@@ -285,7 +365,6 @@ export default function ChatPage() {
               >
                 Send
               </button>
-              <div ref={messagesEndRef} />
             </div>
           </>
         ) : (
@@ -300,10 +379,16 @@ export default function ChatPage() {
         open={openModal}
         onClose={() => setOpenModal(false)}
         onChatCreated={(conversation) => {
-            setConversations((prev) => [
-            conversation,
-            ...prev,
-            ]);
+            setConversations((prev) => {
+              const withoutDuplicate = prev.filter(
+                (item) => item._id !== conversation._id
+              );
+
+              return [
+                conversation,
+                ...withoutDuplicate,
+              ];
+            });
         }}
         />
     </div>

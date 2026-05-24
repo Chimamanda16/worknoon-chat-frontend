@@ -6,6 +6,7 @@ import API from "@/lib/api";
 import toast from "react-hot-toast";
 import { useEffect } from "react";
 import { getUser } from "@/lib/auth";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,6 +75,7 @@ export default function LoginPage() {
         <button className="w-full cursor-pointer bg-black text-white p-3 rounded-lg">
           Login
         </button>
+        <p>Don&apos;t have an account? <Link className="text-blue-600" href="/register">Register</Link></p>
       </form>
     </div>
   );

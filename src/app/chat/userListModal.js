@@ -11,20 +11,24 @@ export default function UserListModal({
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    if (open) {
-      fetchUsers();
-    }
+    if (!open) return;
+
+    let isMounted = true;
+
+    API.get("/auth/users")
+      .then(({ data }) => {
+        if (isMounted) {
+          setUsers(data);
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [open]);
-
-  const fetchUsers = async () => {
-    try {
-      const { data } = await API.get("/auth/users");
-
-      setUsers(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   const createConversation = async (participantId) => {
     try {

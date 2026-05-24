@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import API from "@/lib/api";
 import { io } from "socket.io-client";
 import UserListModal from "./userListModal";
+import { useRouter } from "next/navigation";
+import { getUser } from "@/lib/auth";
+import { useRef } from "react";
+
+
 
 const socket = io("http://localhost:5000");
 
@@ -13,28 +18,44 @@ export default function ChatPage() {
   const [openModal, setOpenModal] = useState(false);
   const [messages, setMessages] = useState([]);
   const [mobileView, setMobileView] = useState("list"); 
-
+  const [loading, setLoading] = useState(true);
   const [newMessage, setNewMessage] = useState("");
 
   const [typing, setTyping] = useState(false);
 
   const [onlineUsers, setOnlineUsers] = useState([]);
 
-  const userInfo =
-    typeof window !== "undefined"
-      ? JSON.parse(localStorage.getItem("userInfo"))
-      : null;
+  const router = useRouter();
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    const user = getUser();
+
+    if (!user) {
+        router.push("/login");
+    }
+  }, []);
+
+  const userInfo = getUser();
 
   // FETCH CONVERSATIONS
   const fetchConversations = async () => {
-    try {
-      const { data } = await API.get("/conversations");
+        try {
+            setLoading(true);
 
-      setConversations(data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+            const { data } = await API.get("/conversations");
+            setConversations(data);
+
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
   // FETCH MESSAGES
   const fetchMessages = async (conversationId) => {
@@ -115,61 +136,72 @@ export default function ChatPage() {
       {/* SIDEBAR */}
       <div className={`w-full md:w-1/3 h-screen bg-white border-r overflow-y-auto h-1/3 md:h-full ${mobileView === "chat" ? "hidden md:block" : ""}`}>
         <div className="p-4 border-b flex items-center justify-between">
-          <h1 className="text-xl md:text-2xl font-bold">
-            Messages
-          </h1>
+            <h1 className="text-xl md:text-2xl font-bold">
+                Messages
+            </h1>
 
-          <button
-            onClick={() => setOpenModal(true)}
-           className="bg-black cursor-pointer text-white px-4 py-2 rounded-full"
-          >
-            +
-          </button>
-        </div>
-
-        {conversations.map((conversation) => {
-            const otherUser = conversation.participants.find(
-              (p) => p._id !== userInfo._id
-            );
-            const unreadCount =
-              conversation.lastMessage &&
-              !conversation.lastMessage.readBy?.includes(userInfo._id)
-                ? 1
-                : 0;
-
-          return (
-            <div
-              key={conversation._id}
-              onClick={() => {
-                setSelectedChat(conversation);
-                fetchMessages(conversation._id);
-                setMobileView("chat");
-              }}
-              className="p-4 border-b cursor-pointer hover:bg-gray-50"
+            <button
+                onClick={() => {
+                localStorage.removeItem("userInfo");
+                window.location.href = "/login";
+                }}
+                className="text-sm cursor-pointer bg-red-500 text-white px-3 py-1 rounded-full"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="font-semibold">
-                    {otherUser?.name}
-                  </h2>
+                Logout
+            </button>
+        </div>
+        {!loading && conversations.length === 0 && (
+            <p className="p-4 text-gray-500">
+                No conversations yet. Start one using the + button.
+            </p>
+        )}
+        {loading ? (
+            <p className="p-4 text-gray-500">Loading chats...</p>
+            ) : (
+            conversations.map((conversation) => {
+                const otherUser = conversation.participants.find(
+                (p) => p._id !== userInfo._id
+                );
+                const unreadCount =
+                conversation.lastMessage &&
+                !conversation.lastMessage.readBy?.includes(userInfo._id)
+                    ? 1
+                    : 0;
 
-                  <p className="text-sm text-gray-500">
-                    {otherUser?.role}
-                  </p>
-                  {unreadCount > 0 && (
-                    <span className="bg-black text-white text-xs px-2 py-1 rounded-full">
-                        New
-                    </span>
+            return (
+                <div
+                key={conversation._id}
+                onClick={() => {
+                    setSelectedChat(conversation);
+                    fetchMessages(conversation._id);
+                    setMobileView("chat");
+                }}
+                className="p-4 border-b cursor-pointer hover:bg-gray-50"
+                >
+                <div className="flex items-center justify-between">
+                    <div>
+                    <h2 className="font-semibold">
+                        {otherUser?.name}
+                    </h2>
+
+                    <p className="text-sm text-gray-500">
+                        {otherUser?.role}
+                    </p>
+                    {unreadCount > 0 && (
+                        <span className="bg-black text-white text-xs px-2 py-1 rounded-full">
+                            New
+                        </span>
+                        )}
+                    </div>
+
+                    {onlineUsers.includes(otherUser?._id) && (
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
                     )}
                 </div>
-
-                {onlineUsers.includes(otherUser?._id) && (
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                </div>
+            );
+            })
+        )}
       </div>
 
       {/* CHAT AREA */}
@@ -204,6 +236,11 @@ export default function ChatPage() {
 
             {/* MESSAGES */}
             <div className="flex-1 overflow-y-auto p-3 md:p-4 pb-20 md:pb-4 space-y-3">
+                {messages.length === 0 && (
+                    <div className="flex-1 flex items-center justify-center text-gray-400">
+                        Say hi 👋
+                    </div>
+                )}
               {messages.map((message) => (
                 <div
                   key={message._id}
@@ -248,6 +285,7 @@ export default function ChatPage() {
               >
                 Send
               </button>
+              <div ref={messagesEndRef} />
             </div>
           </>
         ) : (

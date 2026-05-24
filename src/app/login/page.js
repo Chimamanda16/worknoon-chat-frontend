@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import API from "@/lib/api";
 import toast from "react-hot-toast";
+import { useEffect } from "react";
+import { getUser } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +14,12 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    if (getUser()) {
+      router.push("/chat");
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
